@@ -1,0 +1,20 @@
+import numpy as np
+import scipy.stats
+
+mu = 2
+sigma = 4
+def q(x):
+    return np.exp(-(x-mu)**2/(sigma**2))
+def p(x):
+    return np.random.normal(x, mu, sigma)
+def hm(n=10000):
+    sample = np.zeros(n)
+    sample[0] = 1.7
+    for i in range(n-1):
+        q_s = np.random.normal(mu,sigma)
+        u = np.random.rand()
+        if u < min(1, (p(q_s)*q(sample[i]))/(p(sample[i])*q(q_s))):
+            sample[i+1] = q_s
+        else:
+            sample[i+1] = sample[i]
+    return sample
