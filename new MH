@@ -1,0 +1,79 @@
+import numpy as np
+import scipy
+import scipy.stats
+import matplotlib as mpl   
+import matplotlib.pyplot as plt
+%matplotlib inline
+
+class MH(object):
+    def __init__(self,
+                 u,sigma,data,variation=0.4,iterations=1000):
+        self.data = copy(data)
+        self.u = u
+        self.sigma = sigma
+        self.x = [self.u, self.sigma]
+        self.var = variation
+        self.iterations = iterations
+        
+    transition_model = lambda x: [x[0], np.random.normal(x[1], self.var, (1,))[0]]
+    # keep u steady and move the sigma
+    # Q(new|current) = N(u = curr, sigma' = 1) (1,) float version -> random draws
+    
+    # u is a const and sigma is the variable
+    # acc sigma_new if likelihood_new * prior_new /  likelihood * prior > 1
+    # likelihood = ∏ f(di | u , sigma) -> logarithm
+    # what we need : di and u and sigma
+    
+    def prior(self,x):
+        if (self.x[1] <= 0):
+            return 0
+        return 1
+    # make sure that sigma is valid
+    # suggesting that no preference for sigma as long as it is positive
+    
+    # calculate the likelihood
+    def log_normal_like(self,x, data):
+        x = self.x
+        return np.sum(-np.log(x[1] * np.sqrt(2*np.pi)) - ((self.data - x[0]) ** 2) / (2 * x[1])**2)
+    
+    def log_like_diff(self,x,data,x_new):
+        x = self.x
+        log_lik_diff = self.log_normal_like(x_new,self.data) - self.log_normal_like(x,self.data)
+        return log_like_diff
+    def log_prior_diff(self,x, x_new):
+        x = self.x
+        log_prior_diff = np.log(self.prior(x_new)) - np.log(self.prior(x))
+        return log_prior_diff
+    
+    def acc_rule(self, posterior_diff):
+        if posterior_diff>0:
+            return True
+        else:
+            accept=np.random.uniform(0,1)
+        # Since we did a log likelihood, we need to exponentiate in order to compare to the random number
+        # less likely x_new are less likely to be accepted
+            return (accept < (np.exp(posterior_diff)))
+    
+    def mh_step(self,x,data,iterations):
+        
+            acc = []
+            rej = []
+            
+            x_new = transition_model(self.x)
+            
+            loglik_diff = self.log_like_diff(self.x, self.data, x_new)
+            
+            logprior_diff = self.log_prior_diff(self.x, x_new)
+            
+            posterior_diff = loklik_diff + logprior_diff
+            
+            if (self.acc_rule(posterior_diff)):
+                self.x = x_new
+                acc.append(x_new)
+            else:
+                rej.append(x_new)
+                
+            return np.array(acc), np.array(rej)
+ 
+ 
+
